@@ -99,12 +99,26 @@ def render_overview_page(df, sidebar_config, chart_renderer):
     st.markdown("---")
     st.markdown("## Best Model Performance")
     
-    st.success("""
-    **Best Model**: XGBoost  
-    **F1 Score**: 0.667  
-    **Accuracy**: 79.3%  
-    **ROC-AUC**: 0.873
-    """)
+    _, pipeline_data = load_model_components()
+    if pipeline_data:
+        performance = pipeline_data['model_performance']
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.metric("Model", pipeline_data['model_name'])
+        with col2:
+            st.metric("Accuracy", f"{performance['accuracy']:.3f}")
+        with col3:
+            st.metric("F1-Score", f"{performance['f1_score']:.3f}")
+        with col4:
+            st.metric("Precision", f"{performance['precision']:.3f}")
+        with col5:
+            st.metric("Recall", f"{performance['recall']:.3f}")
+        
+        st.metric("ROC-AUC", f"{performance['roc_auc']:.3f}")
+    else:
+        st.error("Model performance data not available")
 
 def render_exploration_page(df, processor, sidebar_config, chart_renderer):
     st.markdown('<h1 class="main-header">Data Exploration Dashboard</h1>', unsafe_allow_html=True)
@@ -151,16 +165,22 @@ def render_prediction_page(df, model, processor, sidebar_config, chart_renderer)
     st.markdown('<h1 class="main-header">Monthly Delay Risk Prediction</h1>', unsafe_allow_html=True)
     
     st.markdown("## Model Performance")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         st.metric("Model Type", processor.pipeline_data['model_name'])
     with col2:
-        st.metric("F1-Score", f"{processor.pipeline_data['model_performance']['f1_score']:.4f}")
+        st.metric("Accuracy", f"{processor.pipeline_data['model_performance']['accuracy']:.3f}")
     with col3:
-        st.metric("Accuracy", f"{processor.pipeline_data['model_performance']['accuracy']:.4f}")
+        st.metric("F1-Score", f"{processor.pipeline_data['model_performance']['f1_score']:.3f}")
     with col4:
-        st.metric("ROC-AUC", f"{processor.pipeline_data['model_performance']['roc_auc']:.4f}")
+        st.metric("Precision", f"{processor.pipeline_data['model_performance']['precision']:.3f}")
+    with col5:
+        st.metric("Recall", f"{processor.pipeline_data['model_performance']['recall']:.3f}")
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col3:
+        st.metric("ROC-AUC", f"{processor.pipeline_data['model_performance']['roc_auc']:.3f}")
     
     st.markdown("---")
     
@@ -210,7 +230,6 @@ def render_prediction_page(df, model, processor, sidebar_config, chart_renderer)
                                          min_value=0, max_value=int(arr_flights), value=min(5, int(arr_flights)),
                                          help="Expected diverted flights for the month")
             
-        # Calculate metrics for display
         total_disruptions = arr_cancelled + arr_diverted
         
         st.markdown("### Calculated Metrics")
@@ -248,7 +267,7 @@ def render_prediction_page(df, model, processor, sidebar_config, chart_renderer)
         is_valid = total_disruptions <= arr_flights
         
         if not is_valid:
-            st.error(f"❌ Invalid input: Cancellations ({arr_cancelled}) + Diversions ({arr_diverted}) = {total_disruptions} cannot exceed total flights ({arr_flights})")
+            st.error(f"Invalid input: Cancellations ({arr_cancelled}) + Diversions ({arr_diverted}) = {total_disruptions} cannot exceed total flights ({arr_flights})")
             st.info("Please adjust the values and try again.")
         else:
             try:

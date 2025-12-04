@@ -275,3 +275,51 @@ class ChartRenderer:
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No historical data available for this airport.")
+    
+    def render_model_performance_card(self, performance_data: Dict[str, float], model_name: str):
+        st.markdown("### Model Performance Dashboard")
+        
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        metrics_config = [
+            ("Accuracy", performance_data['accuracy'], "Overall correctness"),
+            ("F1-Score", performance_data['f1_score'], "Balance of precision & recall"),
+            ("Precision", performance_data['precision'], "Accuracy of delay predictions"),
+            ("Recall", performance_data['recall'], "Ability to catch actual delays"),
+            ("ROC-AUC", performance_data['roc_auc'], "Overall ranking ability")
+        ]
+        
+        cols = [col1, col2, col3, col4, col5]
+        
+        for i, (metric_name, value, icon, description) in enumerate(metrics_config):
+            with cols[i]:
+                st.markdown(f"""
+                <div class="metric-card">
+                    <h3>{icon} {metric_name}</h3>
+                    <h2>{value:.3f}</h2>
+                    <p>{description}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Performance interpretation
+        st.markdown("### Performance Interpretation")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.info(f"""
+            **Model**: {model_name}
+            
+            **Strengths**:
+            - {'High accuracy' if performance_data['accuracy'] > 0.8 else 'Good accuracy'} ({performance_data['accuracy']:.1%})
+            - {'Excellent' if performance_data['f1_score'] > 0.7 else 'Good'} F1-Score ({performance_data['f1_score']:.3f})
+            - {'Strong' if performance_data['roc_auc'] > 0.8 else 'Good'} ranking ability (AUC: {performance_data['roc_auc']:.3f})
+            """)
+        
+        with col2:
+            st.success(f"""
+            **Business Impact**:
+            - Catches {performance_data['recall']:.1%} of actual high-delay periods
+            - {performance_data['precision']:.1%} of delay predictions are correct
+            - Reliable for operational planning decisions
+            """)
