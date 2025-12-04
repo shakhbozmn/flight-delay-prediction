@@ -138,12 +138,14 @@ The dataset contains **409,612 flight records** from 2003 to 2025, covering dome
 - **Evaluation Metrics**:
   - Accuracy
   - F1-Score
+  - Precision
+  - Recall
   - ROC-AUC
 - **Test Set Results**:
   - All models evaluated on held-out test set
-  - Best model: XGBoost (F1: 0.667, Accuracy: 79.3%, ROC-AUC: 0.873)
+  - Best model: XGBoost (F1: 0.667, Accuracy: 79.3%, ROC-AUC: 0.873, Precision: 0.592, Recall: 0.765)
 - **Visualizations**:
-  - Model comparison charts (Accuracy, F1-Score, ROC-AUC, Training Time)
+  - Model comparison charts (Accuracy, F1-Score, Recall, Precision, ROC-AUC, Training Time)
   - ROC curves for all models
   - Confusion matrix for best model
   - Classification report
@@ -163,24 +165,12 @@ The dataset contains **409,612 flight records** from 2003 to 2025, covering dome
     - Real-time prediction with confidence scores
     - Historical context visualization
 
-## Model Performance
-
-The best performing model is **XGBoost** with the following test set performance:
-
-- **F1-Score**: 0.667
-- **Accuracy**: 79.3%
-- **ROC-AUC**: 0.873
-
 ## Notes
 
 - The trained models are saved in the `models/` directory
 - The notebook should be run from the project root directory to ensure correct file paths
 - The Streamlit app requires the dataset and model files to be in their respective directories
 - All preprocessing steps are saved in `pipeline_data.pkl` for consistent predictions in the Streamlit app
-
-## Author
-
-
 
 ---
 
