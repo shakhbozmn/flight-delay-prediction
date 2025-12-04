@@ -59,8 +59,33 @@ The dataset contains **409,612 flight records** from 2003 to 2025, covering dome
    ```
 
 2. **Open the notebook**
-   - Navigate to `flight_delay_analysis.ipynb`
+   - Navigate to `notebooks/flight_delay_analysis.ipynb`
    - Run cells sequentially to reproduce the analysis
+
+   **Note**: If you encounter an XGBoost error on macOS like:
+   ```
+   XGBoostError: XGBoost Library (libxgboost.dylib) could not be loaded.
+   Likely causes:
+     * OpenMP runtime is not installed
+       - vcomp140.dll or libgomp-1.dll for Windows
+       - libomp.dylib for Mac OSX
+       - libgomp.so for Linux and other UNIX-like OSes
+     Mac OSX users: Run brew install libomp to install OpenMP runtime.
+     * You are running 32-bit Python on a 64-bit OS
+   ```
+   
+   Install the OpenMP runtime using Homebrew:
+   ```bash
+   brew install libomp
+   ```
+   
+   Then reinstall XGBoost:
+   ```bash
+   source venv/bin/activate
+   pip uninstall xgboost
+   pip install xgboost
+   ```
+
 
 3. **Notebook Sections**:
    - **Data Loading**: Load and inspect the dataset
