@@ -45,6 +45,9 @@ IGNORED_PATH_SUFFIXES: tuple[str, ...] = (
     ".zip",
     ".parquet",
 )
+IGNORED_PATH_NAMES: frozenset[str] = frozenset(
+    {"test_publication_hygiene.py"}
+)
 
 
 def _tracked_text_files() -> list[Path]:
@@ -74,10 +77,7 @@ def _read_text(path: Path) -> str:
 def test_no_blocked_terms_in_tracked_files() -> None:
     offenders: list[tuple[str, str]] = []
     for path in _tracked_text_files():
-        # The hygiene test source itself assembles fragments that contain
-        # blocked substrings; excluding it is the only way to assert against
-        # every tracked file without splitting the block-list.
-        if path.name == "test_publication_hygiene.py":
+        if path.name in IGNORED_PATH_NAMES:
             continue
         text = _read_text(path)
         if not text:
