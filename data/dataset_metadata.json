@@ -1,0 +1,29 @@
+{
+  "destination_path": "data/raw/Airline_Delay_Cause.csv",
+  "earliest_year": 2003,
+  "latest_month": 7,
+  "latest_year": 2025,
+  "license": "U.S. Government work (17 U.S.C. \u00a7105); public-domain reuse per Bureau of Transportation Statistics policy.",
+  "local_source_path": "data/raw/Airline_Delay_Cause.csv",
+  "row_count": 21680,
+  "schema_columns": [
+    "year",
+    "month",
+    "carrier",
+    "carrier_name",
+    "airport",
+    "airport_name",
+    "arr_flights",
+    "arr_del15",
+    "arr_cancelled",
+    "arr_diverted",
+    "arr_delay",
+    "carrier_delay",
+    "weather_delay",
+    "nas_delay",
+    "security_delay",
+    "late_aircraft_delay"
+  ],
+  "sha256": "88d8bfbf617e1bd9db1f158f4bc5dee44de6c8f11a86de5bf5e96721b981a0f2",
+  "source_url": "https://www.transtats.bts.gov/ot_delay/ot_delaycause1.asp?pn=1"
+}

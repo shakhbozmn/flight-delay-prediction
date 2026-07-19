@@ -1,0 +1,33 @@
+{
+  "dashboard_columns": [
+    "year",
+    "month",
+    "carrier",
+    "carrier_name",
+    "airport",
+    "airport_name",
+    "arr_flights",
+    "arr_del15",
+    "arr_cancelled",
+    "arr_diverted",
+    "arr_delay",
+    "carrier_delay",
+    "weather_delay",
+    "nas_delay",
+    "security_delay",
+    "late_aircraft_delay"
+  ],
+  "output_path": "data/dashboard_data.csv.gz",
+  "output_sha256": "bf02de2e85566cc0e5724be905a11132c02007f71db7b9ec0aff8b914461e9ec",
+  "output_size_bytes": 175699,
+  "row_count": 5360,
+  "schema_version": 1,
+  "source_metadata_path": "data/dataset_metadata.json",
+  "source_row_count": 21680,
+  "source_sha256": null,
+  "year_window": {
+    "end_month": 7,
+    "end_year": 2025,
+    "start_year": 2020
+  }
+}

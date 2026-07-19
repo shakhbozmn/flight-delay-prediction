@@ -1,202 +1,76 @@
-# Flight Delay Prediction and Analysis
+# Flight Delay Prediction
 
-## Overview
+Personal machine-learning portfolio project that classifies U.S. carrier/airport/
+month flight records as "high delay" (more than 25% of flights delayed by 15+
+minutes) or "normal operations". The repo delivers a leakage-safe training
+pipeline, a reproducible Streamlit dashboard, and a Markdown case study.
 
-This project represents ML analysis of airline delays using the U.S. Department of Transportation's Airline On-Time Statistics and Delay Causes dataset. The project core idea is to predict high-delay periods (months with >25% delay rate) and provides insights for airline operations.
+> Deployment pending — the live Streamlit Community Cloud URL will replace
+> this notice after publication.
 
+## Highlights
 
+- Leakage-safe chronological evaluation: training 2003–2022, validation 2023,
+  final test 2024, drift check 2025-Jan through 2025-Jul.
+- Three candidate models compared on validation F1; one fitted pipeline
+  persisted to `models/model_pipeline.joblib`.
+- Small, deterministic dashboard dataset for reliable Streamlit deployment.
+- Reproducible data acquisition script that validates the official BTS
+  snapshot's checksum, row count, and column contract.
 
-## Dataset
+## Repository layout
 
-The dataset contains **409,612 flight records** from 2003 to 2025, covering domestic flights operated by major U.S. carriers. The dataset includes:
+```
+data/                 validated snapshot metadata and dashboard artifact
+docs/case-study.md    full methodology and results
+docs/assets/          model comparison and confusion matrix figures
+models/               fitted pipeline + metadata JSON
+notebooks/            reproducible narrative
+scripts/              CLI entrypoints (download, build, train)
+src/ml/               reusable data, feature, training, evaluation modules
+src/app.py            Streamlit dashboard
+tests/                pytest suite covering contract, training, app, scripts
+```
 
-- **Flight Operations**: Total arrivals, cancellations, diversions
-- **Delay Causes**: Air Carrier, Weather, National Aviation System, Late Aircraft, Security delays
-- **Temporal Information**: Year and month
-- **Location Data**: Carrier codes, carrier names, airport codes, airport names
-- **Delay Metrics**: Count and duration of delays by cause
+## Quick start
 
-## Project Objectives
+```bash
+python3.11 -m venv venv
+venv/bin/pip install -r requirements-dev.txt
 
-1. **Predictive Modeling**: Classify months with high delay rates (>25%) vs. normal operations
-2. **Data Exploration**: Identify patterns and factors contributing to flight delays
-3. **Model Comparison**: Evaluate multiple machine learning algorithms
-4. **Feature Engineering**: Create meaningful predictors from raw data
-5. **Deployment**: Interactive Streamlit application for exploration and prediction
+# Acquire the BTS snapshot manually from
+# https://www.transtats.bts.gov/ot_delay/ot_delaycause1.asp?pn=1
+# for June 2003 through July 2025 and save as a CSV.
 
-## Installation
+venv/bin/python scripts/download_data.py --source-file <downloaded.csv>
+venv/bin/python scripts/build_dashboard_data.py
+venv/bin/python scripts/train_model.py
+venv/bin/streamlit run src/app.py
+```
 
-### Prerequisites
+## Tests
 
-- Python 3.11 or higher #3.11.11 version were used while developing
-- pip package manager
+```bash
+venv/bin/python -m pytest -q
+```
 
-### Setup Steps
+## Data
 
-1. **Clone or download the project**
+The raw dataset is not committed. `scripts/download_data.py` validates the
+SHA-256, row count, and column contract of a manually downloaded BTS snapshot
+before importing it. `scripts/build_dashboard_data.py` produces a deterministic
+2020–July 2025 dataset used by the deployed app.
 
-2. **Create a virtual environment (recommended)**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
+## Limitations
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+This is a portfolio project. The model is built on historical U.S. domestic
+data, cannot capture weather or air-traffic events, and is not suitable for
+operational airline decisions. See `docs/case-study.md` for details.
 
-4. **Ensure dataset is in place**
-   - The dataset file `Airline_Delay_Cause.csv` should be in the `data/` directory
+## License
 
-## Usage
+MIT. See `LICENSE`.
 
-### Running the Jupyter Notebook
+## Author
 
-1. **Start Jupyter Notebook**
-   ```bash
-   jupyter notebook
-   ```
-
-2. **Open the notebook**
-   - Navigate to `notebooks/flight_delay_analysis.ipynb`
-   - Run cells sequentially to reproduce the analysis
-
-   **Note**: If you encounter an XGBoost error on macOS like:
-   ```
-   XGBoostError: XGBoost Library (libxgboost.dylib) could not be loaded.
-   Likely causes:
-     * OpenMP runtime is not installed
-       - vcomp140.dll or libgomp-1.dll for Windows
-       - libomp.dylib for Mac OSX
-       - libgomp.so for Linux and other UNIX-like OSes
-     Mac OSX users: Run brew install libomp to install OpenMP runtime.
-     * You are running 32-bit Python on a 64-bit OS
-   ```
-   
-   Install the OpenMP runtime using Homebrew:
-   ```bash
-   brew install libomp
-   ```
-   
-   Then reinstall XGBoost:
-   ```bash
-   source venv/bin/activate
-   pip uninstall xgboost
-   pip install xgboost
-   ```
-
-
-3. **Notebook Sections**:
-   - **Data Loading**: Load and inspect the dataset
-   - **Exploratory Data Analysis**: Statistical summaries, visualizations, correlation analysis
-   - **Data Preparation**: Missing value handling, scaling, feature engineering, train/test split
-   - **Model Training**: Training of 5 models (Logistic Regression, Random Forest, Decision Tree, KNN, XGBoost)
-   - **Hyperparameter Tuning**: GridSearchCV for Random Forest and XGBoost (best models)
-   - **Model Evaluation**: Performance metrics and visualizations
-
-### Running the Streamlit Application
-
-1. **Start the Streamlit app**
-   ```bash
-   streamlit run src/app.py
-   ```
-
-2. **Access the application**
-   - The app will open in your default web browser
-   - Default URL: `http://localhost:8501`
-
-3. **Application Pages**:
-   - **Overview**: Project summary and best model performance
-   - **Data Exploration**: Interactive visualizations of delay patterns, carrier performance, and correlations
-   - **Model Prediction**: Input form to predict delay risk for specific month-carrier-airport combinations
-
-## Project Sections
-
-### A. Data Loading
-- Single dataset source: `Airline_Delay_Cause.csv`
-- Dataset shape: 409,612 rows × 21 columns
-- Initial data inspection and basic statistics
-
-### B. Exploratory Data Analysis
-- **Statistical Summaries**: 
-  - Numerical columns: mean, std, min, max, quartiles
-  - Categorical columns: unique values, frequency counts
-- **Correlation Matrix**: Heatmap showing relationships between numerical features
-- **Visualizations**:
-  - Histogram: Arrival delay distribution
-  - Box plots: Delay distribution by carrier
-  - Bar charts: Average delay by month, delay causes, cancellation/diversion rates
-
-### C. Data Preparation
-- **Missing Values**: 
-  - Delay columns filled with 0 (no delays)
-  - Count columns filled with 0
-  - Categorical columns filled with 'Unknown'
-- **Error Correction**:
-  - Negative flight counts corrected
-  - Impossible values (delayed flights > total flights) fixed
-  - Outlier handling using IQR method
-- **Feature Engineering**:
-  - Target variable: `high_delay_month` (1 if delay rate > 25%, 0 otherwise)
-  - Time-based features: quarter, is_winter, is_summer, is_peak_travel
-  - Operational features: flights_per_day, cancellation_rate, total_disruptions
-  - Aggregated features: airport and carrier statistics (total flights, cancellations, diversions)
-- **Data Splitting**: 
-  - Train set: 80% (327,689 samples)
-  - Test set: 20% (81,923 samples)
-  - Stratified split to maintain class distribution
-
-### D. Model Training
-- **Baseline Models**:
-  1. Logistic Regression
-  2. Random Forest
-  3. Decision Tree
-  4. K-Nearest Neighbors
-  5. XGBoost
-- **Hyperparameter Tuning**:
-  - Random Forest: GridSearchCV with parameters for n_estimators, max_depth, min_samples_split
-  - XGBoost: GridSearchCV with parameters for n_estimators, max_depth, learning_rate, subsample, colsample_bytree
-- **Training Method**: Cross-validation used for model selection
-
-### E. Model Evaluation
-- **Evaluation Metrics**:
-  - Accuracy
-  - F1-Score
-  - Precision
-  - Recall
-  - ROC-AUC
-- **Test Set Results**:
-  - All models evaluated on held-out test set
-  - Best model: XGBoost (F1: 0.667, Accuracy: 79.3%, ROC-AUC: 0.873, Precision: 0.592, Recall: 0.765)
-- **Visualizations**:
-  - Model comparison charts (Accuracy, F1-Score, Recall, Precision, ROC-AUC, Training Time)
-  - ROC curves for all models
-  - Confusion matrix for best model
-  - Classification report
-
-### F. Deployment
-- **Streamlit Application**: Multi-page web application
-  - **Overview Page**: Project description and best model metrics
-  - **Data Exploration Page**: 
-    - Dataset overview metrics
-    - Delay distribution charts
-    - Monthly trends
-    - Carrier performance analysis
-    - Delay causes visualization
-    - Correlation heatmap
-  - **Model Prediction Page**:
-    - Input form for year, month, carrier, airport, and operational forecasts
-    - Real-time prediction with confidence scores
-    - Historical context visualization
-
-## Notes
-
-- The trained models are saved in the `models/` directory
-- The notebook should be run from the project root directory to ensure correct file paths
-- The Streamlit app requires the dataset and model files to be in their respective directories
-- All preprocessing steps are saved in `pipeline_data.pkl` for consistent predictions in the Streamlit app
-
----
-
-*This project is maintained as a personal machine-learning portfolio project.*
+Shahboz Munirov — <https://github.com/shakhbozmn>.

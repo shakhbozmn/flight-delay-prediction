@@ -1,35 +1,44 @@
-import streamlit as st
-import warnings
-warnings.filterwarnings('ignore')
+"""Streamlit entrypoint for the flight-delay portfolio dashboard."""
 
-from utils.loader import load_dataset, load_model_components, get_dataset_info
-from utils.processor import DataProcessor
-from components.sidebar import render_sidebar
-from components.charts import ChartRenderer
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import numpy as np
+import streamlit as st
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.components.charts import ChartRenderer
+from src.components.sidebar import render_sidebar
+from src.utils.loader import (
+    get_dataset_info,
+    load_dashboard_dataset,
+    load_model_resources,
+)
+from src.utils.processor import DataProcessor
 
 st.set_page_config(
-    page_title="Flight Delay Analysis & Prediction",
+    page_title="Flight Delay Prediction",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-st.markdown("""
+st.markdown(
+    """
 <style>
     .main-header {
-        font-size: 3rem;
+        font-size: 2.6rem;
         font-weight: 700;
-        color: #1f77b4;
+        color: #1f4e79;
         text-align: center;
-        margin-bottom: 2rem;
-    }
-    .sub-header {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin: 1rem 0;
+        margin-bottom: 1rem;
     }
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #4f8df3 0%, #3553a8 100%);
         padding: 1rem;
         border-radius: 10px;
         color: white;
@@ -50,247 +59,240 @@ st.markdown("""
         margin: 1rem 0;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-def main():
-    
-    df = load_dataset()
-    model, pipeline_data = load_model_components()
-    
+
+def main() -> None:
+    df = load_dashboard_dataset()
+    pipeline, metadata = load_model_resources()
+
     if df is None:
         st.stop()
-    
-    if model and pipeline_data:
-        processor = DataProcessor(pipeline_data)
-    
+
     sidebar_config = render_sidebar()
-    
     chart_renderer = ChartRenderer(theme=sidebar_config["theme"])
-    
-    if sidebar_config["page"] == "Overview":
-        render_overview_page(df, sidebar_config, chart_renderer)
-    elif sidebar_config["page"] == "Data Exploration":
-        render_exploration_page(df, processor, sidebar_config, chart_renderer)
-    elif sidebar_config["page"] == "Model Prediction":
-        if model and pipeline_data:
-            render_prediction_page(df, model, processor, sidebar_config, chart_renderer)
-        else:
-            st.error("Model components not loaded. Please check model files.")
+    processor = DataProcessor()
 
-def render_overview_page(df, sidebar_config, chart_renderer):
-    st.markdown('<h1 class="main-header">Flight Delay Analysis & Prediction System</h1>', unsafe_allow_html=True)
-    
-    dataset_info = get_dataset_info(df)
-    chart_renderer.render_metric_cards(dataset_info)
-    
-    st.markdown("---")
-    
+    page = sidebar_config["page"]
+    if page == "Overview":
+        render_overview_page(df, metadata, chart_renderer)
+    elif page == "Data Exploration":
+        render_exploration_page(df, processor, chart_renderer)
+    elif page == "Model Prediction":
+        if pipeline is None or metadata is None:
+            st.error("Model resources are unavailable. Run scripts/train_model.py.")
+            st.stop()
+        render_prediction_page(df, pipeline, processor, metadata, chart_renderer)
+
+
+def render_overview_page(df, metadata, chart_renderer) -> None:
+    st.markdown(
+        "<h1 class='main-header'>Flight Delay Prediction</h1>",
+        unsafe_allow_html=True,
+    )
+
+    info = get_dataset_info(df)
+    chart_renderer.render_metric_cards(info)
+
     st.markdown("## Overview")
-    st.markdown("""
-    This work presents a comprehensive machine learning analysis of airline delays using the U.S. Department of Transportation's Airline On-Time Statistics and Delay Causes dataset. The project develops a complete data science pipeline to predict high-delay periods and extract actionable insights for airline operations.
-    
-    ### Objectives:
-    1. **Predictive Modeling**: Develop machine learning models to classify months with high delay rates (>25%) vs. normal operations
-    2. **Operational Insights**: Identify key factors contributing to flight delays through exploratory data analysis
-    3. **Performance Comparison**: Evaluate multiple algorithms to determine the most effective approach for delay prediction
-    4. **Feature Engineering**: Create meaningful predictors from raw operational data to improve model performance
-    """)
-    
-    st.markdown("---")
-    st.markdown("## Best Model Performance")
-    
-    _, pipeline_data = load_model_components()
-    if pipeline_data:
-        performance = pipeline_data['model_performance']
-        
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
-        with col1:
-            st.metric("Model", pipeline_data['model_name'])
-        with col2:
-            st.metric("Accuracy", f"{performance['accuracy']:.3f}")
-        with col3:
-            st.metric("F1-Score", f"{performance['f1_score']:.3f}")
-        with col4:
-            st.metric("Precision", f"{performance['precision']:.3f}")
-        with col5:
-            st.metric("Recall", f"{performance['recall']:.3f}")
-        
-        st.metric("ROC-AUC", f"{performance['roc_auc']:.3f}")
-    else:
-        st.error("Model performance data not available")
+    st.markdown(
+        """
+This dashboard demonstrates a leakage-safe machine-learning workflow built on
+public U.S. Department of Transportation data. The model classifies each
+carrier/airport/month record as either high delay (>25% of flights delayed
+15+ minutes) or normal operations, using only features that would be known
+ahead of time.
+"""
+    )
 
-def render_exploration_page(df, processor, sidebar_config, chart_renderer):
-    st.markdown('<h1 class="main-header">Data Exploration Dashboard</h1>', unsafe_allow_html=True)
-    
-    df_analysis = processor.create_analysis_dataframe(df)
-    
-    st.markdown("## Dataset Overview")
-    dataset_info = get_dataset_info(df)
-    chart_renderer.render_metric_cards(dataset_info)
-    
+    st.markdown("## Selected model performance")
+    if metadata is None:
+        st.info("Model metadata unavailable.")
+        return
+    performance = metadata["test_metrics"]
+    columns = st.columns(6)
+    labels = ["Accuracy", "F1", "Precision", "Recall", "ROC-AUC", "PR-AUC"]
+    keys = ["accuracy", "f1", "precision", "recall", "roc_auc", "pr_auc"]
+    for column, label, key in zip(columns, labels, keys):
+        column.metric(label, f"{performance.get(key, 0.0):.3f}")
 
-    st.markdown("### Raw Data Sample")
+    st.caption(
+        "Selected model: {} | Author: {} | Trained on BTS snapshot {}".format(
+            metadata["selected_model"],
+            metadata["author"],
+            metadata["source_sha256"][:12],
+        )
+    )
+
+    drift = metadata.get("drift_metrics", {})
+    if drift:
+        st.markdown("## Recent-period drift check")
+        st.caption(
+            "Separate evaluation on the January–July 2025 partial period. "
+            "Treat as informational, not a final held-out test."
+        )
+        for key in ("accuracy", "f1", "roc_auc"):
+            st.metric(f"2025 {key}", f"{drift.get(key, 0.0):.3f}")
+
+
+def render_exploration_page(df, processor, chart_renderer) -> None:
+    st.markdown(
+        "<h1 class='main-header'>Data Exploration</h1>",
+        unsafe_allow_html=True,
+    )
+    analysis = processor.create_analysis_dataframe(df)
+
+    st.markdown("## Dataset overview")
+    chart_renderer.render_metric_cards(get_dataset_info(df))
+
+    st.markdown("### Raw data sample")
     st.dataframe(df.head(20), use_container_width=True)
-    
-    st.markdown("---")
-    
-    st.markdown("## Delay Distribution Analysis")
-    chart_renderer.render_delay_distribution(df_analysis)
-    
-    st.markdown("---")
-    
-    st.markdown("## Temporal Patterns")
-    monthly_stats = processor.get_monthly_statistics(df_analysis)
-    chart_renderer.render_monthly_trends(monthly_stats)
-    
-    st.markdown("---")
-    
-    st.markdown("## Airline Performance Analysis")
-    carrier_stats, top_carriers = processor.get_carrier_statistics(df_analysis)
+
+    st.markdown("## Delay distribution")
+    chart_renderer.render_delay_distribution(analysis)
+
+    st.markdown("## Temporal patterns")
+    monthly = processor.get_monthly_statistics(analysis)
+    chart_renderer.render_monthly_trends(monthly)
+
+    st.markdown("## Carrier performance")
+    carrier_stats, top_carriers = processor.get_carrier_statistics(analysis)
     chart_renderer.render_carrier_analysis(carrier_stats, top_carriers)
-    
-    st.markdown("---")
-    
-    st.markdown("## Delay Causes Analysis")
-    delay_means = processor.get_delay_causes_statistics(df)
-    chart_renderer.render_delay_causes(delay_means)
-    
-    st.markdown("---")
-    
-    st.markdown("## Feature Correlations")
+
+    st.markdown("## Delay causes")
+    causes = processor.get_delay_causes_statistics(df)
+    chart_renderer.render_delay_causes(causes)
+
+    st.markdown("## Feature correlations")
     chart_renderer.render_correlation_heatmap(df)
 
-def render_prediction_page(df, model, processor, sidebar_config, chart_renderer):
-    st.markdown('<h1 class="main-header">Monthly Delay Risk Prediction</h1>', unsafe_allow_html=True)
-    
-    st.markdown("## Model Performance")
-    col1, col2, col3, col4, col5 = st.columns(5)
-    
-    with col1:
-        st.metric("Model Type", processor.pipeline_data['model_name'])
-    with col2:
-        st.metric("Accuracy", f"{processor.pipeline_data['model_performance']['accuracy']:.3f}")
-    with col3:
-        st.metric("F1-Score", f"{processor.pipeline_data['model_performance']['f1_score']:.3f}")
-    with col4:
-        st.metric("Precision", f"{processor.pipeline_data['model_performance']['precision']:.3f}")
-    with col5:
-        st.metric("Recall", f"{processor.pipeline_data['model_performance']['recall']:.3f}")
-    
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col3:
-        st.metric("ROC-AUC", f"{processor.pipeline_data['model_performance']['roc_auc']:.3f}")
-    
-    st.markdown("---")
-    
-    st.markdown("## Prediction Input")
-    st.info("**Objective**: Predict if a specific month will have high delay rates (>25% of flights delayed) for a carrier-airport combination")
-    
+
+def render_prediction_page(df, pipeline, processor, metadata, chart_renderer) -> None:
+    st.markdown(
+        "<h1 class='main-header'>Monthly Delay Risk Scenario</h1>",
+        unsafe_allow_html=True,
+    )
+
+    performance = metadata["test_metrics"]
+    columns = st.columns(5)
+    metrics = ["accuracy", "f1", "precision", "recall", "roc_auc"]
+    for column, metric in zip(columns, metrics):
+        column.metric(metric.upper(), f"{performance.get(metric, 0.0):.3f}")
+
+    st.markdown("## Scenario inputs")
+    st.info(
+        "Estimate the probability that a carrier/airport/month will exceed a "
+        "25% delay rate. Enter the values you would forecast for that period."
+    )
+
     with st.form("prediction_form"):
-        st.markdown("### Basic Information")
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            year = st.number_input("Year", min_value=2020, max_value=2035, value=2025, step=1)
-        
-        with col2:
-            month_names = ["January", "February", "March", "April", "May", "June",
-                          "July", "August", "September", "October", "November", "December"]
+        st.markdown("### Period and carrier")
+        first, second, third, fourth = st.columns(4)
+
+        with first:
+            year = st.number_input(
+                "Year", min_value=2020, max_value=2030, value=2025, step=1
+            )
+        with second:
+            month_names = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December",
+            ]
             month_display = st.selectbox("Month", options=month_names, index=5)
             month = month_names.index(month_display) + 1
-        
-        with col3:
-            carrier_options = df[['carrier', 'carrier_name']].drop_duplicates().sort_values('carrier_name')
-            carrier_display_options = [f"{row['carrier_name']} ({row['carrier']})" for _, row in carrier_options.iterrows()]
-            carrier_selection = st.selectbox("Airline Carrier", options=carrier_display_options, index=0)
-            carrier = carrier_selection.split('(')[-1].replace(')', '')
 
-        with col4:
-            airport_options = df[['airport', 'airport_name']].drop_duplicates().sort_values('airport_name')
-            airport_display_options = [f"{row['airport_name']} ({row['airport']})" for _, row in airport_options.iterrows()]
-            airport_selection = st.selectbox("Airport", options=airport_display_options, index=0)
-            airport = airport_selection.split('(')[-1].replace(')', '')
-        
-        st.markdown("### Monthly Operations Forecast")
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            arr_flights = st.number_input("Expected Monthly Flights", 
-                                        min_value=1, max_value=50000, value=1000,
-                                        help="Total flights expected for this carrier-airport combination in the month")
-        
-        with col2:
-            arr_cancelled = st.number_input("Expected Cancellations", 
-                                          min_value=0, max_value=int(arr_flights), value=min(20, int(arr_flights)),
-                                          help="Expected cancelled flights for the month")
-        
-        with col3:
-            arr_diverted = st.number_input("Expected Diversions", 
-                                         min_value=0, max_value=int(arr_flights), value=min(5, int(arr_flights)),
-                                         help="Expected diverted flights for the month")
-            
-        total_disruptions = arr_cancelled + arr_diverted
-        
-        st.markdown("### Calculated Metrics")
-        col1, col2, col3, col4 = st.columns(4)
-        
-        quarter = ((month - 1) // 3) + 1
-        is_winter = month in [12, 1, 2]
-        is_summer = month in [6, 7, 8]
-        is_peak_travel = month in [6, 7, 8, 11, 12]
-        flights_per_day = arr_flights / 30
-        cancellation_rate = arr_cancelled / arr_flights if arr_flights > 0 else 0
-        total_disruptions = arr_cancelled + arr_diverted
-        
-        with col1:
-            st.metric("Quarter", quarter)
-            st.metric("Flights/Day", f"{flights_per_day:.1f}")
-        
-        with col2:
-            st.metric("Winter Season", "Yes" if is_winter else "No")
-            st.metric("Cancellation Rate", f"{cancellation_rate:.3f}")
-        
-        with col3:
-            st.metric("Summer Season", "Yes" if is_summer else "No")
-            st.metric("Total Disruptions", total_disruptions)
-        
-        with col4:
-            st.metric("Peak Travel", "Yes" if is_peak_travel else "No")
-            
-        st.markdown("---")
-        submitted = st.form_submit_button("Predict Monthly Delay Risk", type="primary", use_container_width=True)
-    
+        with third:
+            carrier_options = (
+                df[["carrier", "carrier_name"]]
+                .drop_duplicates()
+                .sort_values("carrier_name")
+            )
+            carrier_display = [
+                f"{row['carrier_name']} ({row['carrier']})"
+                for _, row in carrier_options.iterrows()
+            ]
+            carrier_choice = st.selectbox(
+                "Carrier", options=carrier_display, index=0
+            )
+            carrier = carrier_choice.split("(")[-1].rstrip(") ")
+
+        with fourth:
+            airport_options = (
+                df[["airport", "airport_name"]]
+                .drop_duplicates()
+                .sort_values("airport_name")
+            )
+            airport_display = [
+                f"{row['airport_name']} ({row['airport']})"
+                for _, row in airport_options.iterrows()
+            ]
+            airport_choice = st.selectbox(
+                "Airport", options=airport_display, index=0
+            )
+            airport = airport_choice.split("(")[-1].rstrip(") ")
+
+        st.markdown("### Forecast operational volumes")
+        ops1, ops2, ops3 = st.columns(3)
+        with ops1:
+            arr_flights = st.number_input(
+                "Expected monthly flights",
+                min_value=1,
+                max_value=50000,
+                value=1000,
+            )
+        with ops2:
+            arr_cancelled = st.number_input(
+                "Expected cancellations",
+                min_value=0,
+                max_value=int(arr_flights),
+                value=min(20, int(arr_flights)),
+            )
+        with ops3:
+            arr_diverted = st.number_input(
+                "Expected diversions",
+                min_value=0,
+                max_value=max(0, int(arr_flights) - int(arr_cancelled)),
+                value=min(5, int(arr_flights)),
+            )
+
+        submitted = st.form_submit_button(
+            "Predict monthly delay risk", type="primary", use_container_width=True
+        )
+
     if submitted:
-        # Validate inputs after form submission
-        total_disruptions = arr_cancelled + arr_diverted
-        is_valid = total_disruptions <= arr_flights
-        
-        if not is_valid:
-            st.error(f"Invalid input: Cancellations ({arr_cancelled}) + Diversions ({arr_diverted}) = {total_disruptions} cannot exceed total flights ({arr_flights})")
-            st.info("Please adjust the values and try again.")
-        else:
-            try:
-                input_data = {
-                    'year': year, 'month': month, 'carrier': carrier, 'airport': airport,
-                    'arr_flights': arr_flights, 'arr_cancelled': arr_cancelled, 'arr_diverted': arr_diverted
-                }
-                
-                processed_data = processor.prepare_prediction_input(input_data)
-                prediction = model.predict(processed_data)[0]
-                prediction_proba = model.predict_proba(processed_data)[0]
-                
-                st.markdown("---")
-                st.markdown("## Prediction Results")
-                chart_renderer.render_prediction_result(prediction, prediction_proba)
-                
-                st.markdown("---")
-                st.markdown("## Historical Context")
-                chart_renderer.render_historical_context(df, carrier, airport)
-                
-            except Exception as e:
-                st.error(f"Error making prediction: {str(e)}")
-                st.info("Please check your input values and try again.")
+        if arr_cancelled + arr_diverted > arr_flights:
+            st.error("Cancellations + diversions cannot exceed total flights.")
+            st.info("Adjust the inputs and try again.")
+            return
+
+        input_data = {
+            "year": year,
+            "month": month,
+            "carrier": carrier,
+            "airport": airport,
+            "arr_flights": arr_flights,
+            "arr_cancelled": arr_cancelled,
+            "arr_diverted": arr_diverted,
+        }
+
+        try:
+            features = processor.prepare_prediction_input(input_data)
+            prediction = int(pipeline.predict(features)[0])
+            scores = np.asarray(pipeline.predict_proba(features)[0])
+        except Exception as exc:
+            st.error(f"Prediction failed: {exc}")
+            st.info(
+                "Verify the input values and ensure the model artifact is loaded."
+            )
+            return
+
+        st.markdown("## Prediction")
+        chart_renderer.render_prediction_result(prediction, scores)
+        st.markdown("## Historical context")
+        chart_renderer.render_historical_context(df, carrier, airport)
+
 
 if __name__ == "__main__":
     main()

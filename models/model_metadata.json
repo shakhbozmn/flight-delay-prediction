@@ -1,0 +1,63 @@
+{
+  "author": "Shahboz Munirov",
+  "drift_metrics": {
+    "accuracy": 0.5035714285714286,
+    "f1": 0.5544871794871795,
+    "pr_auc": 0.0,
+    "precision": 0.5785953177257525,
+    "recall": 0.5323076923076923,
+    "roc_auc": 0.49943044189852703
+  },
+  "library_versions": {
+    "joblib": "1.4.2",
+    "numpy": "2.1.2",
+    "pandas": "2.2.3",
+    "python": "3.11.15",
+    "scikit-learn": "1.5.2",
+    "xgboost": "3.2.0"
+  },
+  "partitions": {
+    "drift": "2025-01..2025-07",
+    "test": "2024",
+    "train": "2003-2022",
+    "validation": "2023"
+  },
+  "schema_version": 1,
+  "selected_model": "XGBoost",
+  "source_sha256": "383fb1ae404cc46aa9380bbc8156fdf6e2e4bd5af7ae1197717a639a92378134",
+  "target_threshold": 0.25,
+  "test_metrics": {
+    "accuracy": 0.5041666666666667,
+    "f1": 0.5414258188824663,
+    "pr_auc": 0.0,
+    "precision": 0.5642570281124498,
+    "recall": 0.5203703703703704,
+    "roc_auc": 0.5070590828924162
+  },
+  "validation_results": {
+    "LogisticRegression": {
+      "accuracy": 0.4979166666666667,
+      "f1": 0.5478424015009381,
+      "pr_auc": 0.0,
+      "precision": 0.5934959349593496,
+      "recall": 0.5087108013937283,
+      "roc_auc": 0.49333826794966695
+    },
+    "RandomForest": {
+      "accuracy": 0.49270833333333336,
+      "f1": 0.5754141238012206,
+      "pr_auc": 0.0,
+      "precision": 0.5759162303664922,
+      "recall": 0.5749128919860628,
+      "roc_auc": 0.48772815078261805
+    },
+    "XGBoost": {
+      "accuracy": 0.521875,
+      "f1": 0.5846153846153846,
+      "pr_auc": 0.0,
+      "precision": 0.608286252354049,
+      "recall": 0.5627177700348432,
+      "roc_auc": 0.5016564062753877
+    }
+  }
+}

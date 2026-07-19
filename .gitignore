@@ -1,4 +1,19 @@
 venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.coverage
+htmlcov/
 
+.DS_Store
+.ipynb_checkpoints/
+
+data/raw/
+data/Airline_Delay_Cause.csv
+
+*.egg-info/
+build/
+dist/
+
+models/*.joblib
+models/*.pkl
